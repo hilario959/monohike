@@ -293,15 +293,15 @@ input[type='date'] {
 
 .stats-range-inputs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .range-field {
   display: grid;
   gap: 0.25rem;
   font-weight: 600;
-  flex: 1 1 140px;
+  width: 100%;
   min-width: 0;
 }
 
