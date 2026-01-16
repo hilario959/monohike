@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monohike</title>
+    <script>
+      (function () {
+        var basePath = '/monohike';
+        var l = window.location;
+        var path = l.pathname.indexOf(basePath) === 0
+          ? l.pathname.slice(basePath.length)
+          : l.pathname;
+        var redirect =
+          l.origin +
+          basePath +
+          '/?' +
+          path +
+          (l.search ? l.search.replace(/&/g, '~and~') : '') +
+          l.hash;
+        l.replace(redirect);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
