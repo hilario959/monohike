@@ -59,15 +59,16 @@ const HikeDetailPage = () => {
   };
 
   const handleDelete = async () => {
-    if (!hike?.id) return;
+    const hikeId = hike?.id;
+    if (!hikeId) return;
     const confirmed = window.confirm('Delete this hike permanently? This cannot be undone.');
     if (!confirmed) return;
     setDeleting(true);
     setDeleteError(null);
     try {
       await db.transaction('rw', db.hikes, db.points, async () => {
-        await db.points.where('hikeId').equals(hike.id).delete();
-        await db.hikes.delete(hike.id);
+        await db.points.where('hikeId').equals(hikeId).delete();
+        await db.hikes.delete(hikeId);
       });
       navigate('/');
     } catch (error) {
