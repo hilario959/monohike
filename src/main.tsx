@@ -8,6 +8,7 @@ import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import App from './App';
+import AppErrorBoundary from './components/AppErrorBoundary';
 import './index.css';
 
 L.Icon.Default.mergeOptions({
@@ -21,7 +22,9 @@ registerSW({ immediate: true });
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <AppErrorBoundary>
+        <App />
+      </AppErrorBoundary>
     </BrowserRouter>
   </React.StrictMode>
 );
