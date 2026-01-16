@@ -12,6 +12,8 @@ const HikeDetailPage = () => {
   const [points, setPoints] = useState<TrackPoint[]>([]);
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -54,6 +56,24 @@ const HikeDetailPage = () => {
     const gpx = buildGpx(hike, points);
     const filename = `${(hike.name ?? 'monohike').replace(/\s+/g, '-')}.gpx`;
     downloadFile(gpx, filename, 'application/gpx+xml');
+  };
+
+  const handleDelete = async () => {
+    if (!hike?.id) return;
+    const confirmed = window.confirm('Delete this hike permanently? This cannot be undone.');
+    if (!confirmed) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await db.transaction('rw', db.hikes, db.points, async () => {
+        await db.points.where('hikeId').equals(hike.id).delete();
+        await db.hikes.delete(hike.id);
+      });
+      navigate('/');
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Failed to delete hike.');
+      setDeleting(false);
+    }
   };
 
   if (!hike) {
@@ -115,6 +135,14 @@ const HikeDetailPage = () => {
         <p className="section-title">Export</p>
         <button className="primary-button" onClick={handleExport}>
           Export GPX
+        </button>
+      </div>
+
+      <div className="card">
+        <p className="section-title">Delete hike</p>
+        {deleteError && <p className="alert">{deleteError}</p>}
+        <button className="danger-button" onClick={handleDelete} disabled={deleting}>
+          {deleting ? 'Deleting...' : 'Delete hike'}
         </button>
       </div>
     </section>
