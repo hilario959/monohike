@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Monohike icon">
+  <rect width="512" height="512" rx="96" fill="#0f172a" />
+  <path
+    d="M96 372L216 172l92 156 44-76 116 120H96z"
+    fill="#38bdf8"
+  />
+  <path
+    d="M176 372l72-116 54 88 30-48 68 76H176z"
+    fill="#e2e8f0"
+  />
+  <circle cx="372" cy="156" r="36" fill="#facc15" />
+</svg>
