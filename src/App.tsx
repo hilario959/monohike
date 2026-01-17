@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage';
 import RecordPage from './pages/RecordPage';
 import HikeDetailPage from './pages/HikeDetailPage';
 import { db } from './db/db';
+import { HikeRecorderProvider } from './contexts/HikeRecorderContext';
 
 const App = () => {
   const [dbError, setDbError] = useState<string | null>(null);
@@ -98,11 +99,13 @@ const App = () => {
       </header>
 
       <main className="app-content">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/record" element={<RecordPage />} />
-          <Route path="/hike/:id" element={<HikeDetailPage />} />
-        </Routes>
+        <HikeRecorderProvider>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/record" element={<RecordPage />} />
+            <Route path="/hike/:id" element={<HikeDetailPage />} />
+          </Routes>
+        </HikeRecorderProvider>
       </main>
 
       <nav className="bottom-nav">

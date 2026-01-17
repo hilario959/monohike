@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LiveMap from '../components/LiveMap';
 import { db } from '../db/db';
-import { useHikeRecorder } from '../hooks/useHikeRecorder';
+import { useHikeRecorderContext } from '../contexts/HikeRecorderContext';
 import { formatDistance, formatDuration } from '../utils/format';
 
 const RecordPage = () => {
@@ -18,7 +18,7 @@ const RecordPage = () => {
     pause,
     resume,
     finish
-  } = useHikeRecorder();
+  } = useHikeRecorderContext();
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
