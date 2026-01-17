@@ -84,7 +84,7 @@ const HomePage = () => {
     <section>
       <div className="stats-row">
         <div className="card stats-card">
-          <p className="section-title">Stats range</p>
+          <p className="section-title">Stats Range 📈</p>
           <div className="stats-range-inputs">
             <label className="range-field" htmlFor="range-start">
               <span className="muted">Start</span>
@@ -122,7 +122,7 @@ const HomePage = () => {
         <div className="card stats-card streak-card">
           <div className="streak-header">
             <div>
-              <p className="section-title">Weekly streak</p>
+              <p className="section-title">Weekly streak 🔥</p>
               <p className="muted">Weeks in a row with a hike.</p>
               <p className="muted compact-note">Resets after a missed week.</p>
             </div>
@@ -132,9 +132,9 @@ const HomePage = () => {
       </div>
 
       <div className="card">
-        <p className="section-title">Your hikes</p>
+        <p className="section-title">Your Hikes 🏔️</p>
         {hikes.length === 0 ? (
-          <p className="muted">No hikes yet. Head to Record to start tracking.</p>
+          <p className="muted">No hikes yet. Head to Navigate to start tracking.</p>
         ) : (
           <div>
             {hikes.map((hike) => (

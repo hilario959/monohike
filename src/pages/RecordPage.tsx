@@ -72,7 +72,7 @@ const RecordPage = () => {
       {saveError && <div className="alert">{saveError}</div>}
 
       <div className="card">
-        <p className="section-title">Live tracking</p>
+        <p className="section-title">Live Tracking 🥾</p>
         <div className="stat-grid">
           <div className="stat">
             <div className="stat-label">Distance</div>
@@ -101,7 +101,7 @@ const RecordPage = () => {
         <p className="section-title">Controls</p>
         <div className="button-row">
           {status === 'idle' && (
-            <button className="primary-button" onClick={start}>
+            <button className="primary-button button-full" onClick={start}>
               Start
             </button>
           )}
@@ -126,7 +126,7 @@ const RecordPage = () => {
             </>
           )}
           {status === 'ended' && (
-            <button className="primary-button" onClick={start}>
+            <button className="primary-button button-full" onClick={start}>
               Start new hike
             </button>
           )}
