@@ -271,6 +271,17 @@ input[type='date'] {
   font-size: 1rem;
   background: var(--color-surface);
   color: var(--color-text);
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 44px;
+}
+
+input[type='date']::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator {
+  opacity: 0.7;
 }
 
 .alert {
@@ -297,6 +308,10 @@ input[type='date'] {
   flex-direction: column;
   gap: 0.4rem;
   width: 100%;
+  padding: 0.6rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
 }
 
 .range-field {
