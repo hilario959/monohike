@@ -305,6 +305,7 @@ input[type='date'] {
   font-weight: 600;
   width: 100%;
   min-width: 0;
+  overflow: hidden;
 }
 
 .range-field input[type='date'] {
