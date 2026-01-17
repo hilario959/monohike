@@ -32,7 +32,6 @@ class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundary
         <header className="app-header">
           <div>
             <p className="app-title">Monohike</p>
-            <p className="app-subtitle">AllTrails-lite, offline-first</p>
           </div>
         </header>
         <main className="app-content">
