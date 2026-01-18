@@ -19,7 +19,7 @@ export interface TrackPoint {
   accuracy: number;
 }
 
-class MonohikeDB extends Dexie {
+class MonoHikeDB extends Dexie {
   hikes!: Table<Hike, number>;
   points!: Table<TrackPoint, number>;
 
@@ -32,4 +32,4 @@ class MonohikeDB extends Dexie {
   }
 }
 
-export const db = new MonohikeDB();
+export const db = new MonoHikeDB();

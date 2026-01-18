@@ -1,6 +1,6 @@
-# Monohike
+# MonoHike
 
-Monohike is an offline-first, mobile-focused “AllTrails-lite” Progressive Web App for recording hikes, reviewing stats, and exporting GPX files. Everything is stored locally in IndexedDB.
+MonoHike is an offline-first, mobile-focused “AllTrails-lite” Progressive Web App for recording hikes, reviewing stats, and exporting GPX files. Everything is stored locally in IndexedDB.
 
 ## Local development
 

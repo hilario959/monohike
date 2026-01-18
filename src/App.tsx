@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import HomePage from './pages/HomePage';
 import RecordPage from './pages/RecordPage';
@@ -13,6 +13,8 @@ import { supabase } from './lib/supabaseClient';
 const App = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const stored = localStorage.getItem('monohike-theme');
     return stored === 'light' ? 'light' : 'dark';
@@ -36,11 +38,28 @@ const App = () => {
     localStorage.setItem('monohike-theme', theme);
   }, [theme]);
 
+  const showBackButton = session && location.pathname.startsWith('/hike/');
+
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div>
-          <p className="app-title">Monohike</p>
+        <div className="header-left">
+          {showBackButton && (
+            <button
+              type="button"
+              className="header-button header-back"
+              onClick={() => navigate('/')}
+              aria-label="Back to home"
+            >
+              <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+                <path
+                  d="M15.5 5.5a1 1 0 0 1 0 1.4L10.4 12l5.1 5.1a1 1 0 0 1-1.4 1.4l-5.8-5.8a1 1 0 0 1 0-1.4l5.8-5.8a1 1 0 0 1 1.4 0z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+          )}
+          <p className="app-title">MonoHike</p>
         </div>
         <div className="header-actions">
           <button
@@ -66,11 +85,11 @@ const App = () => {
             )}
           </button>
           {session && (
-            <NavLink to="/account" className="header-button" aria-label="Account">
-              <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
-                <path
-                  d="M12 12.75a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 1.75c-3.33 0-6.5 1.67-6.5 4.25a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1c0-2.58-3.17-4.25-6.5-4.25z"
-                  fill="currentColor"
+              <NavLink to="/account" className="header-button" aria-label="Account">
+                <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+                  <path
+                    d="M12 12.75a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 1.75c-3.33 0-6.5 1.67-6.5 4.25a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1c0-2.58-3.17-4.25-6.5-4.25z"
+                    fill="currentColor"
                 />
               </svg>
             </NavLink>

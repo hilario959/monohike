@@ -17,7 +17,7 @@ export const buildGpx = (hike: Hike, points: TrackPoint[]) => {
     .join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<gpx version="1.1" creator="Monohike" xmlns="http://www.topografix.com/GPX/1/1">\n` +
+    `<gpx version="1.1" creator="MonoHike" xmlns="http://www.topografix.com/GPX/1/1">\n` +
     `  <metadata><time>${hike.started_at}</time></metadata>\n` +
     `  <trk>\n` +
     `    <name>${name}</name>\n` +
