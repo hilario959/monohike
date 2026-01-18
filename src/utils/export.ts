@@ -1,4 +1,4 @@
-import type { Hike, TrackPoint } from '../db/db';
+import type { Hike, TrackPoint } from '../types/hike';
 
 const escapeXml = (value: string) =>
   value
@@ -8,7 +8,7 @@ const escapeXml = (value: string) =>
     .replace(/"/g, '&quot;');
 
 export const buildGpx = (hike: Hike, points: TrackPoint[]) => {
-  const name = escapeXml(hike.name ?? `Hike ${new Date(hike.startedAt).toLocaleDateString()}`);
+  const name = escapeXml(hike.name ?? `Hike ${new Date(hike.started_at).toLocaleDateString()}`);
   const trackPoints = points
     .map(
       (point) =>
@@ -18,7 +18,7 @@ export const buildGpx = (hike: Hike, points: TrackPoint[]) => {
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<gpx version="1.1" creator="Monohike" xmlns="http://www.topografix.com/GPX/1/1">\n` +
-    `  <metadata><time>${hike.startedAt}</time></metadata>\n` +
+    `  <metadata><time>${hike.started_at}</time></metadata>\n` +
     `  <trk>\n` +
     `    <name>${name}</name>\n` +
     `    <trkseg>\n${trackPoints}\n    </trkseg>\n` +

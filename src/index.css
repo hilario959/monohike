@@ -73,6 +73,12 @@ body {
   color: #f8fafc;
 }
 
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.header-button,
 .theme-toggle {
   border: none;
   background: rgba(255, 255, 255, 0.18);
@@ -87,6 +93,16 @@ body {
   place-items: center;
 }
 
+.header-button {
+  width: auto;
+  height: 40px;
+  padding: 0 0.9rem;
+  text-decoration: none;
+  display: grid;
+  place-items: center;
+}
+
+.header-button svg,
 .theme-toggle svg {
   width: 20px;
   height: 20px;
@@ -274,6 +290,7 @@ body {
 }
 
 input[type='text'],
+input[type='email'],
 input[type='date'] {
   width: 100%;
   border: 1px solid var(--color-border);
@@ -285,6 +302,18 @@ input[type='date'] {
   appearance: none;
   -webkit-appearance: none;
   min-height: 44px;
+}
+
+textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.95rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  resize: vertical;
+  min-height: 120px;
 }
 
 input[type='date']::-webkit-date-and-time-value {
@@ -359,6 +388,62 @@ input[type='date']::-webkit-calendar-picker-indicator {
   font-size: 2.4rem;
   font-weight: 700;
   color: var(--color-text);
+}
+
+.hike-photo-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hike-photo-thumb {
+  width: 68px;
+  height: 68px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hike-photo-thumb.is-cover {
+  border-color: rgba(126, 180, 176, 0.9);
+  box-shadow: 0 0 0 2px rgba(51, 119, 109, 0.35);
+}
+
+.hike-photo-more {
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.hike-photo-grid {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.5rem;
+}
+
+.hike-photo-card {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.hike-photo-actions {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.hike-photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hike-photo.is-cover {
+  border-color: rgba(126, 180, 176, 0.9);
+  box-shadow: 0 0 0 2px rgba(51, 119, 109, 0.35);
 }
 
 .compact-note {

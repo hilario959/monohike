@@ -1,7 +1,7 @@
 import { MapContainer, Polyline, TileLayer } from 'react-leaflet';
 import type { LatLngTuple } from 'leaflet';
 import MapView from './MapView';
-import type { TrackPoint } from '../db/db';
+import type { TrackPoint } from '../types/hike';
 
 interface HikeMapProps {
   points: TrackPoint[];

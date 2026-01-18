@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LiveMap from '../components/LiveMap';
-import { db } from '../db/db';
+import { supabase } from '../lib/supabaseClient';
 import { useHikeRecorderContext } from '../contexts/HikeRecorderContext';
 import { formatDistance, formatDuration } from '../utils/format';
 
@@ -28,25 +28,46 @@ const RecordPage = () => {
     setSaving(true);
     setSaveError(null);
     try {
-      const hikeId = await db.hikes.add({
-        name: 'Untitled hike',
-        startedAt: result.startedAt.toISOString(),
-        endedAt: result.endedAt.toISOString(),
-        durationSec: result.duration,
-        distanceMeters,
-        createdAt: new Date().toISOString()
-      });
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
+        throw new Error(userError?.message ?? 'You must be signed in to save a hike.');
+      }
+
+      const { data: hikeRow, error: hikeError } = await supabase
+        .from('hikes')
+        .insert({
+          user_id: userData.user.id,
+          name: 'Untitled hike',
+          comment: null,
+          started_at: result.startedAt.toISOString(),
+          ended_at: result.endedAt.toISOString(),
+          duration_sec: result.duration,
+          distance_meters: distanceMeters,
+          created_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
+
+      if (hikeError || !hikeRow) {
+        throw new Error(hikeError?.message ?? 'Failed to save hike.');
+      }
+
+      const hikeId = hikeRow.id;
 
       if (points.length > 0) {
-        await db.points.bulkAdd(
+        const { error: pointsError } = await supabase.from('points').insert(
           points.map((point) => ({
-            hikeId,
+            hike_id: hikeId,
+            user_id: userData.user.id,
             lat: point.lat,
             lon: point.lon,
             timestamp: point.timestamp,
             accuracy: point.accuracy
           }))
         );
+        if (pointsError) {
+          throw new Error(pointsError.message);
+        }
       }
 
       navigate(`/hike/${hikeId}`);

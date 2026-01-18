@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { liveQuery } from 'dexie';
-import { db, type Hike } from '../db/db';
+import { supabase } from '../lib/supabaseClient';
+import type { Hike, HikePhoto } from '../types/hike';
 import { formatDistance, formatDuration } from '../utils/format';
 
 const getWeekStart = (date: Date) => {
@@ -21,6 +21,10 @@ const addDays = (date: Date, days: number) => {
 
 const HomePage = () => {
   const [hikes, setHikes] = useState<Hike[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [photoMap, setPhotoMap] = useState<Record<number, string[]>>({});
+  const [coverMap, setCoverMap] = useState<Record<number, string | null>>({});
   const [rangeStart, setRangeStart] = useState(() => {
     const now = new Date();
     const start = new Date(now);
@@ -30,14 +34,50 @@ const HomePage = () => {
   const [rangeEnd, setRangeEnd] = useState(() => new Date().toISOString().slice(0, 10));
 
   useEffect(() => {
-    const subscription = liveQuery(() =>
-      db.hikes.orderBy('createdAt').reverse().toArray()
-    ).subscribe({
-      next: (items) => setHikes(items),
-      error: (err) => console.error(err)
-    });
-
-    return () => subscription.unsubscribe();
+    const loadHikes = async () => {
+      setLoading(true);
+      setLoadError(null);
+      const { data, error } = await supabase
+        .from('hikes')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) {
+        setLoadError(error.message);
+        setHikes([]);
+        setPhotoMap({});
+        setCoverMap({});
+      } else {
+        setHikes(data ?? []);
+        if (data && data.length > 0) {
+          const hikeIds = data.map((hike) => hike.id);
+          const { data: photos } = await supabase
+            .from('hike_photos')
+            .select('*')
+            .in('hike_id', hikeIds);
+          const grouped: Record<number, string[]> = {};
+          const covers: Record<number, string | null> = {};
+          (photos ?? []).forEach((photo: HikePhoto) => {
+            const { data: urlData } = supabase.storage
+              .from('hike-photos')
+              .getPublicUrl(photo.path);
+            if (!grouped[photo.hike_id]) {
+              grouped[photo.hike_id] = [];
+            }
+            grouped[photo.hike_id].push(urlData.publicUrl);
+            if (photo.is_cover) {
+              covers[photo.hike_id] = urlData.publicUrl;
+            }
+          });
+          setPhotoMap(grouped);
+          setCoverMap(covers);
+        } else {
+          setPhotoMap({});
+          setCoverMap({});
+        }
+      }
+      setLoading(false);
+    };
+    loadHikes();
   }, []);
 
   const filteredHikes = useMemo(() => {
@@ -49,7 +89,7 @@ const HomePage = () => {
     start.setHours(0, 0, 0, 0);
     end.setHours(23, 59, 59, 999);
     return hikes.filter((hike) => {
-      const hikeDate = new Date(hike.startedAt);
+      const hikeDate = new Date(hike.started_at);
       return hikeDate >= start && hikeDate <= end;
     });
   }, [hikes, rangeStart, rangeEnd]);
@@ -57,8 +97,8 @@ const HomePage = () => {
   const monthlyTotals = useMemo(() => {
     return filteredHikes.reduce(
       (totals, hike) => {
-        totals.distanceMeters += hike.distanceMeters;
-        totals.durationSec += hike.durationSec;
+        totals.distanceMeters += hike.distance_meters;
+        totals.durationSec += hike.duration_sec;
         return totals;
       },
       { distanceMeters: 0, durationSec: 0 }
@@ -68,7 +108,7 @@ const HomePage = () => {
   const weeklyStreak = useMemo(() => {
     const weeksWithHikes = new Set<string>();
     hikes.forEach((hike) => {
-      const weekStart = getWeekStart(new Date(hike.startedAt));
+      const weekStart = getWeekStart(new Date(hike.started_at));
       weeksWithHikes.add(weekStart.toISOString().slice(0, 10));
     });
     let streak = 0;
@@ -133,14 +173,36 @@ const HomePage = () => {
 
       <div className="card">
         <p className="section-title">Your Hikes 🏔️</p>
-        {hikes.length === 0 ? (
+        {loading ? (
+          <p className="muted">Loading hikes...</p>
+        ) : loadError ? (
+          <p className="alert">{loadError}</p>
+        ) : hikes.length === 0 ? (
           <p className="muted">No hikes yet. Head to Navigate to start tracking.</p>
         ) : (
           <div>
             {hikes.map((hike) => (
               <Link key={hike.id} to={`/hike/${hike.id}`} className="card" style={{ display: 'block' }}>
-                <strong>{hike.name ?? new Date(hike.startedAt).toLocaleDateString()}</strong>
-                <p className="muted">{formatDuration(hike.durationSec)} · {formatDistance(hike.distanceMeters)}</p>
+                <strong>{hike.name ?? new Date(hike.started_at).toLocaleDateString()}</strong>
+                <p className="muted">
+                  {formatDuration(hike.duration_sec)} · {formatDistance(hike.distance_meters)}
+                </p>
+                {photoMap[hike.id]?.length ? (
+                  <div className="hike-photo-row">
+                    {coverMap[hike.id] ? (
+                      <img src={coverMap[hike.id] ?? ''} alt="" className="hike-photo-thumb is-cover" />
+                    ) : null}
+                    {photoMap[hike.id]
+                      .filter((url) => url !== coverMap[hike.id])
+                      .slice(0, coverMap[hike.id] ? 2 : 3)
+                      .map((url, index) => (
+                        <img key={`${hike.id}-photo-${index}`} src={url} alt="" className="hike-photo-thumb" />
+                      ))}
+                    {photoMap[hike.id].length > 3 && (
+                      <span className="hike-photo-more">+{photoMap[hike.id].length - 3}</span>
+                    )}
+                  </div>
+                ) : null}
               </Link>
             ))}
           </div>
