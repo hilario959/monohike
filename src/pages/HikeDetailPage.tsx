@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import HikeMap from '../components/HikeMap';
@@ -20,6 +20,8 @@ const HikeDetailPage = () => {
   const [photos, setPhotos] = useState<HikePhoto[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -175,6 +177,8 @@ const HikeDetailPage = () => {
   };
 
   const handleDeletePhoto = async (photo: HikePhoto) => {
+    const confirmed = window.confirm('Delete this photo?');
+    if (!confirmed) return;
     const { error: storageError } = await supabase.storage.from('hike-photos').remove([photo.path]);
     if (storageError) {
       setUploadError(storageError.message);
@@ -198,6 +202,113 @@ const HikeDetailPage = () => {
 
   return (
     <section>
+      <div className="card">
+        <HikeMap points={points} />
+      </div>
+
+      <div className="card">
+        <p className="section-title">Stats</p>
+        <div className="stat-grid">
+          <div className="stat">
+            <div className="stat-label">Distance</div>
+            <div className="stat-value">{formatDistance(hike.distance_meters)}</div>
+          </div>
+          <div className="stat">
+            <div className="stat-label">Duration</div>
+            <div className="stat-value">{formatDuration(hike.duration_sec)}</div>
+          </div>
+          <div className="stat">
+            <div className="stat-label">Avg pace</div>
+            <div className="stat-value">{pace}</div>
+          </div>
+          <div className="stat">
+            <div className="stat-label">Points</div>
+            <div className="stat-value">{points.length}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <p className="section-title">Photos</p>
+        {uploadError && <p className="alert">{uploadError}</p>}
+        {photos.length > 0 ? (
+          <>
+            <div
+              className="hike-photo-carousel"
+              ref={carouselRef}
+              onScroll={() => {
+                const el = carouselRef.current;
+                if (!el) return;
+                const index = Math.round(el.scrollLeft / el.clientWidth);
+                setActiveSlide(index);
+              }}
+            >
+            {photos.map((photo) => {
+              const { data: urlData } = supabase.storage
+                .from('hike-photos')
+                .getPublicUrl(photo.path);
+              return (
+                <div key={photo.id} className="hike-photo-slide">
+                  <img
+                    src={urlData.publicUrl}
+                    alt=""
+                    className="hike-photo"
+                    loading="lazy"
+                  />
+                  <button
+                    type="button"
+                    className="hike-photo-delete"
+                    aria-label="Delete photo"
+                    onClick={() => handleDeletePhoto(photo)}
+                  >
+                    ×
+                  </button>
+                  <button
+                    type="button"
+                    className="hike-photo-cover"
+                    onClick={() => handleSetCover(photo.id)}
+                  >
+                    {photo.is_cover ? 'Cover' : 'Set cover'}
+                  </button>
+                </div>
+              );
+            })}
+            </div>
+            <div className="hike-photo-dots" role="tablist" aria-label="Photo navigation">
+              {photos.map((photo, index) => (
+                <button
+                  key={photo.id}
+                  type="button"
+                  className={`hike-photo-dot${index === activeSlide ? ' is-active' : ''}`}
+                  aria-label={`Photo ${index + 1}`}
+                  onClick={() => {
+                    const el = carouselRef.current;
+                    if (!el) return;
+                    el.scrollTo({ left: index * el.clientWidth, behavior: 'smooth' });
+                    setActiveSlide(index);
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="muted">No photos yet.</p>
+        )}
+        {uploading && <p className="muted">Uploading...</p>}
+        <input
+          id="photo-upload"
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleUpload}
+          disabled={uploading}
+          style={{ display: 'none' }}
+        />
+        <label htmlFor="photo-upload" className="secondary-button button-full photo-upload-button">
+          Upload photos
+        </label>
+      </div>
+
       <div className="card">
         <p className="section-title">Hike details</p>
         <label className="muted" htmlFor="hike-name">
@@ -228,92 +339,16 @@ const HikeDetailPage = () => {
       </div>
 
       <div className="card">
-        <HikeMap points={points} />
-      </div>
-
-      <div className="card">
-        <p className="section-title">Stats</p>
-        <div className="stat-grid">
-          <div className="stat">
-            <div className="stat-label">Distance</div>
-            <div className="stat-value">{formatDistance(hike.distance_meters)}</div>
-          </div>
-          <div className="stat">
-            <div className="stat-label">Duration</div>
-            <div className="stat-value">{formatDuration(hike.duration_sec)}</div>
-          </div>
-          <div className="stat">
-            <div className="stat-label">Avg pace</div>
-            <div className="stat-value">{pace}</div>
-          </div>
-          <div className="stat">
-            <div className="stat-label">Points</div>
-            <div className="stat-value">{points.length}</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <p className="section-title">Photos</p>
-        {uploadError && <p className="alert">{uploadError}</p>}
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleUpload}
-          disabled={uploading}
-        />
-        {uploading && <p className="muted">Uploading...</p>}
-        {photos.length > 0 && (
-          <div className="hike-photo-grid">
-            {photos.map((photo) => {
-              const { data: urlData } = supabase.storage
-                .from('hike-photos')
-                .getPublicUrl(photo.path);
-              return (
-                <div key={photo.id} className="hike-photo-card">
-                  <img
-                    src={urlData.publicUrl}
-                    alt=""
-                    className={`hike-photo${photo.is_cover ? ' is-cover' : ''}`}
-                    loading="lazy"
-                  />
-                  <div className="hike-photo-actions">
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => handleSetCover(photo.id)}
-                    >
-                      {photo.is_cover ? 'Cover' : 'Set cover'}
-                    </button>
-                    <button
-                      type="button"
-                      className="danger-button"
-                      onClick={() => handleDeletePhoto(photo)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="card">
-        <p className="section-title">Export</p>
-        <button className="primary-button" onClick={handleExport}>
-          Export GPX
-        </button>
-      </div>
-
-      <div className="card">
-        <p className="section-title">Delete hike</p>
+        <p className="section-title">Other actions</p>
         {deleteError && <p className="alert">{deleteError}</p>}
-        <button className="danger-button" onClick={handleDelete} disabled={deleting}>
-          {deleting ? 'Deleting...' : 'Delete hike'}
-        </button>
+        <div className="button-row">
+          <button className="outline-button" onClick={handleExport}>
+            Export GPX
+          </button>
+          <button className="outline-button outline-button--danger" onClick={handleDelete} disabled={deleting}>
+            {deleting ? 'Deleting...' : 'Delete hike'}
+          </button>
+        </div>
       </div>
     </section>
   );

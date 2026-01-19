@@ -1,23 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import type { Hike, HikePhoto } from '../types/hike';
 import { formatDistance, formatDuration } from '../utils/format';
-
-const getWeekStart = (date: Date) => {
-  const start = new Date(date);
-  const day = start.getDay();
-  const diff = (day + 6) % 7;
-  start.setDate(start.getDate() - diff);
-  start.setHours(0, 0, 0, 0);
-  return start;
-};
-
-const addDays = (date: Date, days: number) => {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-};
 
 const HomePage = () => {
   const [hikes, setHikes] = useState<Hike[]>([]);
@@ -25,13 +10,8 @@ const HomePage = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [photoMap, setPhotoMap] = useState<Record<number, string[]>>({});
   const [coverMap, setCoverMap] = useState<Record<number, string | null>>({});
-  const [rangeStart, setRangeStart] = useState(() => {
-    const now = new Date();
-    const start = new Date(now);
-    start.setDate(start.getDate() - 30);
-    return start.toISOString().slice(0, 10);
-  });
-  const [rangeEnd, setRangeEnd] = useState(() => new Date().toISOString().slice(0, 10));
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortMode, setSortMode] = useState<'date' | 'alpha'>('date');
 
   useEffect(() => {
     const loadHikes = async () => {
@@ -80,99 +60,25 @@ const HomePage = () => {
     loadHikes();
   }, []);
 
-  const filteredHikes = useMemo(() => {
-    const start = new Date(rangeStart);
-    const end = new Date(rangeEnd);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      return [];
-    }
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
-    return hikes.filter((hike) => {
-      const hikeDate = new Date(hike.started_at);
-      return hikeDate >= start && hikeDate <= end;
-    });
-  }, [hikes, rangeStart, rangeEnd]);
-
-  const monthlyTotals = useMemo(() => {
-    return filteredHikes.reduce(
-      (totals, hike) => {
-        totals.distanceMeters += hike.distance_meters;
-        totals.durationSec += hike.duration_sec;
-        return totals;
-      },
-      { distanceMeters: 0, durationSec: 0 }
-    );
-  }, [filteredHikes]);
-
-  const weeklyStreak = useMemo(() => {
-    const weeksWithHikes = new Set<string>();
-    hikes.forEach((hike) => {
-      const weekStart = getWeekStart(new Date(hike.started_at));
-      weeksWithHikes.add(weekStart.toISOString().slice(0, 10));
-    });
-    let streak = 0;
-    let cursor = getWeekStart(new Date());
-    while (weeksWithHikes.has(cursor.toISOString().slice(0, 10))) {
-      streak += 1;
-      cursor = addDays(cursor, -7);
-    }
-    return streak;
-  }, [hikes]);
-
   return (
     <section>
-      <div className="stats-row">
-        <div className="card stats-card">
-          <p className="section-title">Stats Range 📈</p>
-          <div className="stats-range-inputs">
-            <label className="range-field" htmlFor="range-start">
-              <span className="muted">Start</span>
-              <input
-                id="range-start"
-                type="date"
-                value={rangeStart}
-                onChange={(event) => setRangeStart(event.target.value)}
-                max={rangeEnd}
-              />
-            </label>
-            <label className="range-field" htmlFor="range-end">
-              <span className="muted">End</span>
-              <input
-                id="range-end"
-                type="date"
-                value={rangeEnd}
-                onChange={(event) => setRangeEnd(event.target.value)}
-                min={rangeStart}
-              />
-            </label>
-          </div>
-          <div className="stat-grid compact" style={{ marginTop: '0.75rem' }}>
-            <div className="stat">
-              <div className="stat-label">Distance</div>
-              <div className="stat-value">{formatDistance(monthlyTotals.distanceMeters)}</div>
-            </div>
-            <div className="stat">
-              <div className="stat-label">Time</div>
-              <div className="stat-value">{formatDuration(monthlyTotals.durationSec)}</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card stats-card streak-card">
-          <div className="streak-header">
-            <div>
-              <p className="section-title">Weekly streak 🔥</p>
-              <p className="muted">Weeks in a row with a hike.</p>
-              <p className="muted compact-note">Resets after a missed week.</p>
-            </div>
-            <div className="streak-value">{weeklyStreak}</div>
-          </div>
-        </div>
-      </div>
-
       <div className="card">
         <p className="section-title">Your Hikes 🏔️</p>
+        <div className="hike-controls">
+          <input
+            type="search"
+            placeholder="Search hikes"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
+          <button
+            type="button"
+            className="outline-button hike-filter"
+            onClick={() => setSortMode((prev) => (prev === 'date' ? 'alpha' : 'date'))}
+          >
+            {sortMode === 'date' ? 'Date' : 'A–Z'}
+          </button>
+        </div>
         {loading ? (
           <p className="muted">Loading hikes...</p>
         ) : loadError ? (
@@ -181,28 +87,38 @@ const HomePage = () => {
           <p className="muted">No hikes yet. Head to Navigate to start tracking.</p>
         ) : (
           <div>
-            {hikes.map((hike) => (
-              <Link key={hike.id} to={`/hike/${hike.id}`} className="card" style={{ display: 'block' }}>
-                <strong>{hike.name ?? new Date(hike.started_at).toLocaleDateString()}</strong>
+            {hikes
+              .filter((hike) => {
+                const needle = searchQuery.trim().toLowerCase();
+                if (!needle) return true;
+                const title = hike.name ?? new Date(hike.started_at).toLocaleDateString();
+                return title.toLowerCase().includes(needle);
+              })
+              .sort((a, b) => {
+                if (sortMode === 'alpha') {
+                  const aLabel = (a.name ?? '').toLowerCase();
+                  const bLabel = (b.name ?? '').toLowerCase();
+                  return aLabel.localeCompare(bLabel);
+                }
+                return new Date(b.started_at).getTime() - new Date(a.started_at).getTime();
+              })
+              .map((hike) => (
+              <Link
+                key={hike.id}
+                to={`/hike/${hike.id}`}
+                className="card hike-card"
+                style={{ display: 'block' }}
+              >
+                {coverMap[hike.id] ? (
+                  <img src={coverMap[hike.id] ?? ''} alt="" className="hike-cover" />
+                ) : null}
+                <strong className="hike-title">
+                  {hike.name ?? new Date(hike.started_at).toLocaleDateString()}
+                </strong>
                 <p className="muted">
                   {formatDuration(hike.duration_sec)} · {formatDistance(hike.distance_meters)}
                 </p>
-                {photoMap[hike.id]?.length ? (
-                  <div className="hike-photo-row">
-                    {coverMap[hike.id] ? (
-                      <img src={coverMap[hike.id] ?? ''} alt="" className="hike-photo-thumb is-cover" />
-                    ) : null}
-                    {photoMap[hike.id]
-                      .filter((url) => url !== coverMap[hike.id])
-                      .slice(0, coverMap[hike.id] ? 2 : 3)
-                      .map((url, index) => (
-                        <img key={`${hike.id}-photo-${index}`} src={url} alt="" className="hike-photo-thumb" />
-                      ))}
-                    {photoMap[hike.id].length > 3 && (
-                      <span className="hike-photo-more">+{photoMap[hike.id].length - 3}</span>
-                    )}
-                  </div>
-                ) : null}
+                <button className="secondary-button button-full">See more</button>
               </Link>
             ))}
           </div>
