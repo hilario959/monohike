@@ -14,6 +14,12 @@ const RecordPage = () => {
     elapsedSec,
     accuracy,
     error,
+    restoredSession,
+    keepAwake,
+    wakeLockActive,
+    wakeLockError,
+    enableKeepAwake,
+    disableKeepAwake,
     start,
     pause,
     resume,
@@ -78,8 +84,22 @@ const RecordPage = () => {
     }
   };
 
+  const handleWakeLockToggle = () => {
+    if (keepAwake) {
+      void disableKeepAwake();
+    } else {
+      void enableKeepAwake();
+    }
+  };
+
   return (
     <section>
+      {restoredSession && (
+        <div className="alert">
+          Restored your last tracking session. Keep the app open to continue tracking; most
+          browsers pause geolocation when the app is closed or fully backgrounded.
+        </div>
+      )}
       {error && (
         <div className="alert">
           <strong>Location error:</strong> {error}
@@ -90,6 +110,7 @@ const RecordPage = () => {
           </div>
         </div>
       )}
+      {wakeLockError && <div className="alert">{wakeLockError}</div>}
       {saveError && <div className="alert">{saveError}</div>}
 
       <div className="card">
@@ -152,6 +173,22 @@ const RecordPage = () => {
             </button>
           )}
         </div>
+        {status === 'tracking' && (
+          <div style={{ marginTop: '1rem' }}>
+            <button className="secondary-button" onClick={handleWakeLockToggle}>
+              {keepAwake
+                ? wakeLockActive
+                  ? 'Allow screen to sleep'
+                  : 'Re-enable keep awake'
+                : 'Keep screen awake'}
+            </button>
+            <p className="muted" style={{ marginTop: '0.5rem' }}>
+              Keeping the screen awake reduces the chance the OS suspends tracking. For
+              continuous background tracking, consider installing the PWA and disabling battery
+              optimizations for this site.
+            </p>
+          </div>
+        )}
         {saving && <p className="muted">Saving hike...</p>}
       </div>
     </section>
