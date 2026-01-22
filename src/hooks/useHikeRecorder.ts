@@ -74,6 +74,40 @@ export const useHikeRecorder = () => {
     localStorage.removeItem(STORAGE_KEY);
   };
 
+  const isQuotaExceededError = (storageError: unknown) => {
+    if (!(storageError instanceof DOMException)) {
+      return false;
+    }
+    return (
+      storageError.name === 'QuotaExceededError' ||
+      storageError.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      storageError.name === 'QUOTA_EXCEEDED_ERR'
+    );
+  };
+
+  const persistSession = (payload: PersistedSession) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      return;
+    } catch (storageError) {
+      if (!isQuotaExceededError(storageError)) {
+        clearPersistedSession();
+        return;
+      }
+    }
+
+    const fallbackPayload: PersistedSession = {
+      ...payload,
+      points: payload.lastPoint ? [payload.lastPoint] : []
+    };
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(fallbackPayload));
+    } catch {
+      clearPersistedSession();
+    }
+  };
+
   const releaseWakeLock = useCallback(async () => {
     if (!wakeLockRef.current) {
       setWakeLockActive(false);
@@ -286,7 +320,7 @@ export const useHikeRecorder = () => {
         startedAt: startedAtDateRef.current?.toISOString() ?? null,
         updatedAt: new Date().toISOString()
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      persistSession(payload);
     } else {
       clearPersistedSession();
     }
