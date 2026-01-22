@@ -24,6 +24,9 @@ interface PersistedSession {
 
 const MAX_ACCURACY = 50;
 const MAX_SPEED = 7;
+const MIN_POINT_INTERVAL_SEC = 1;
+const MIN_POINT_DISTANCE_METERS = 2;
+const RESTORE_FRESHNESS_MS = 5 * 60 * 1000;
 const STORAGE_KEY = 'hike-recorder-session-v1';
 
 export const useHikeRecorder = () => {
@@ -182,8 +185,14 @@ export const useHikeRecorder = () => {
         (new Date(nextPoint.timestamp).getTime() -
           new Date(lastPointRef.current.timestamp).getTime()) /
         1000;
+      if (deltaSec < MIN_POINT_INTERVAL_SEC) {
+        return;
+      }
       if (deltaSec > 0) {
         const segment = haversineMeters(lastPointRef.current, nextPoint);
+        if (segment < MIN_POINT_DISTANCE_METERS) {
+          return;
+        }
         const speed = segment / deltaSec;
         if (speed > MAX_SPEED) return;
         setDistanceMeters((prev) => prev + segment);
@@ -282,7 +291,8 @@ export const useHikeRecorder = () => {
       const parsed = JSON.parse(stored) as PersistedSession;
       if (parsed.status === 'tracking' || parsed.status === 'paused') {
         const updatedAtMs = new Date(parsed.updatedAt).getTime();
-        const extraSec = parsed.status === 'tracking'
+        const isFresh = Date.now() - updatedAtMs <= RESTORE_FRESHNESS_MS;
+        const extraSec = parsed.status === 'tracking' && isFresh
           ? Math.max(0, (Date.now() - updatedAtMs) / 1000)
           : 0;
         const nextElapsed = parsed.elapsedSec + extraSec;
@@ -295,9 +305,11 @@ export const useHikeRecorder = () => {
         lastPointRef.current = parsed.lastPoint ?? null;
         startedAtDateRef.current = parsed.startedAt ? new Date(parsed.startedAt) : null;
         setRestoredSession(true);
-        if (parsed.status === 'tracking') {
+        if (parsed.status === 'tracking' && isFresh) {
           startTimer();
           startWatch();
+        } else if (parsed.status === 'tracking') {
+          setStatus('paused');
         }
       } else {
         clearPersistedSession();
