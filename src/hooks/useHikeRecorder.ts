@@ -26,7 +26,6 @@ const MAX_ACCURACY = 50;
 const MAX_SPEED = 7;
 const MIN_POINT_INTERVAL_SEC = 1;
 const MIN_POINT_DISTANCE_METERS = 2;
-const RESTORE_FRESHNESS_MS = 5 * 60 * 1000;
 const STORAGE_KEY = 'hike-recorder-session-v1';
 const LAST_FINISHED_KEY = 'hike-recorder-last-finished-v1';
 
@@ -301,17 +300,21 @@ export const useHikeRecorder = () => {
     try {
       const parsed = JSON.parse(stored) as PersistedSession;
       if (parsed.status === 'tracking' || parsed.status === 'paused') {
-        if (parsed.startedAt && lastFinishedAt) {
-          const startedAtMs = new Date(parsed.startedAt).getTime();
-          const finishedAtMs = new Date(lastFinishedAt).getTime();
-          if (!Number.isNaN(startedAtMs) && !Number.isNaN(finishedAtMs) && startedAtMs <= finishedAtMs) {
+        const finishedAtMs = lastFinishedAt ? new Date(lastFinishedAt).getTime() : null;
+        const startedAtMs = parsed.startedAt ? new Date(parsed.startedAt).getTime() : null;
+        const updatedAtMs = new Date(parsed.updatedAt).getTime();
+        const hasValidUpdatedAt = Number.isFinite(updatedAtMs);
+        if (finishedAtMs !== null && Number.isFinite(finishedAtMs)) {
+          const finishAfterStart = startedAtMs !== null && Number.isFinite(startedAtMs)
+            ? finishedAtMs >= startedAtMs
+            : hasValidUpdatedAt && finishedAtMs >= updatedAtMs;
+          if (finishAfterStart) {
             clearPersistedSession();
+            setRestoredSession(false);
             return;
           }
         }
-        const updatedAtMs = new Date(parsed.updatedAt).getTime();
-        const isFresh = Date.now() - updatedAtMs <= RESTORE_FRESHNESS_MS;
-        const extraSec = parsed.status === 'tracking' && isFresh
+        const extraSec = parsed.status === 'tracking' && hasValidUpdatedAt
           ? Math.max(0, (Date.now() - updatedAtMs) / 1000)
           : 0;
         const nextElapsed = parsed.elapsedSec + extraSec;
@@ -324,11 +327,9 @@ export const useHikeRecorder = () => {
         lastPointRef.current = parsed.lastPoint ?? null;
         startedAtDateRef.current = parsed.startedAt ? new Date(parsed.startedAt) : null;
         setRestoredSession(true);
-        if (parsed.status === 'tracking' && isFresh) {
+        if (parsed.status === 'tracking') {
           startTimer();
           startWatch();
-        } else if (parsed.status === 'tracking') {
-          setStatus('paused');
         }
       } else {
         clearPersistedSession();
