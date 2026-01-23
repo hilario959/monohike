@@ -28,6 +28,7 @@ const MIN_POINT_INTERVAL_SEC = 1;
 const MIN_POINT_DISTANCE_METERS = 2;
 const RESTORE_FRESHNESS_MS = 5 * 60 * 1000;
 const STORAGE_KEY = 'hike-recorder-session-v1';
+const LAST_FINISHED_KEY = 'hike-recorder-last-finished-v1';
 
 export const useHikeRecorder = () => {
   const [status, setStatus] = useState<RecorderStatus>('idle');
@@ -75,6 +76,14 @@ export const useHikeRecorder = () => {
 
   const clearPersistedSession = () => {
     localStorage.removeItem(STORAGE_KEY);
+  };
+
+  const recordFinishedSession = () => {
+    try {
+      localStorage.setItem(LAST_FINISHED_KEY, new Date().toISOString());
+    } catch {
+      // Ignore storage failures for the finished marker.
+    }
   };
 
   const isQuotaExceededError = (storageError: unknown) => {
@@ -277,6 +286,7 @@ export const useHikeRecorder = () => {
     setStatus('ended');
     clearPersistedSession();
     setRestoredSession(false);
+    recordFinishedSession();
     return {
       startedAt: startedAtDateRef.current,
       endedAt: new Date(),
@@ -287,9 +297,18 @@ export const useHikeRecorder = () => {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return;
+    const lastFinishedAt = localStorage.getItem(LAST_FINISHED_KEY);
     try {
       const parsed = JSON.parse(stored) as PersistedSession;
       if (parsed.status === 'tracking' || parsed.status === 'paused') {
+        if (parsed.startedAt && lastFinishedAt) {
+          const startedAtMs = new Date(parsed.startedAt).getTime();
+          const finishedAtMs = new Date(lastFinishedAt).getTime();
+          if (!Number.isNaN(startedAtMs) && !Number.isNaN(finishedAtMs) && startedAtMs <= finishedAtMs) {
+            clearPersistedSession();
+            return;
+          }
+        }
         const updatedAtMs = new Date(parsed.updatedAt).getTime();
         const isFresh = Date.now() - updatedAtMs <= RESTORE_FRESHNESS_MS;
         const extraSec = parsed.status === 'tracking' && isFresh
