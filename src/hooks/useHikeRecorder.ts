@@ -49,21 +49,21 @@ export const useHikeRecorder = () => {
   const startedAtDateRef = useRef<Date | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
-  const clearWatch = () => {
+  const clearWatch = useCallback(() => {
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
-  };
+  }, []);
 
-  const clearTimer = () => {
+  const clearTimer = useCallback(() => {
     if (timerRef.current !== null) {
       window.clearInterval(timerRef.current);
       timerRef.current = null;
     }
-  };
+  }, []);
 
-  const startTimer = () => {
+  const startTimer = useCallback(() => {
     clearTimer();
     const startTime = Date.now();
     startedAtRef.current = new Date(startTime);
@@ -72,7 +72,7 @@ export const useHikeRecorder = () => {
       const diff = (Date.now() - startedAtRef.current.getTime()) / 1000;
       setElapsedSec(Math.floor(accumulatedRef.current + diff));
     }, 1000);
-  };
+  }, [clearTimer]);
 
   const clearPersistedSession = () => {
     localStorage.removeItem(STORAGE_KEY);
@@ -260,7 +260,7 @@ export const useHikeRecorder = () => {
     clearTimer();
     setStatus('paused');
     void releaseWakeLock();
-  }, [releaseWakeLock, status]);
+  }, [clearTimer, clearWatch, releaseWakeLock, status]);
 
   const resume = useCallback(() => {
     if (status !== 'paused') return;
@@ -292,7 +292,7 @@ export const useHikeRecorder = () => {
       endedAt: new Date(),
       duration
     };
-  }, [releaseWakeLock]);
+  }, [clearTimer, clearWatch, releaseWakeLock]);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -375,7 +375,7 @@ export const useHikeRecorder = () => {
       clearTimer();
       void releaseWakeLock();
     };
-  }, [releaseWakeLock]);
+  }, [clearTimer, clearWatch, releaseWakeLock]);
 
   return {
     status,
